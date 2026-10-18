@@ -106,10 +106,7 @@ For a communication to work correctly, both the forward path and the return path
 
 Some useful references for the networking concepts used in this project:
 
-- RFC 791 - Internet Protocol
-- RFC 950 - Internet Standard Subnetting Procedure
-- RFC 4632 - Classless Inter-domain Routing (CIDR)
-- Cisco networking documentation
+- Computer Networking: A Top-Down Approach, by James F. Kurose and Keith W. Ross
 - Linux `ip` command documentation
 - 42 NetPractice subject and training interface
 
