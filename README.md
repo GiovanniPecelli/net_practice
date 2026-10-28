@@ -15,7 +15,7 @@ An in-depth networking project from the **42 School** curriculum. NetPractice fo
 2. [Visual Overview & Exercises](#visual-overview--exercises)
 3. [Theoretical Foundations (Top-Down Approach)](#theoretical-foundations-top-down-approach)
    - [Transport Layer: TCP vs UDP](#1-transport-layer)
-   - [Network Layer: IPv4, Subnetting & Routing](#2-network-layer)
+   - [Network Layer: IPv4 Encapsulation, Subnetting & Routing](#2-network-layer)
    - [Data Link Layer: MAC, Ethernet & ARP](#3-data-link-layer)
 4. [Routing Logic & Network Devices](#routing-logic--network-devices)
 5. [Repository Structure](#repository-structure)
@@ -89,7 +89,57 @@ The transport layer provides logical, process-to-process communication between a
 
 ### 2. Network Layer
 
-The network layer provides host-to-host communication services. It is responsible for routing packets across intermediate routers from source to destination.
+The network layer provides host-to-host communication services. It is responsible for addressing, encapsulating transport-layer segments into datagrams, and routing packets across intermediate routers from source to destination.
+
+#### Protocol Encapsulation Pipeline
+As application data travels down the protocol stack, each layer wraps the upper-layer Protocol Data Unit (PDU) inside its own header (and optional trailer):
+
+```
+Application:                           |         Application Data        |
+                                       +---------------------------------+
+                                                       |
+Transport (Segment):           |  TCP / UDP  |         Application Data        |
+                               +-------------+---------------------------------+
+                                       |
+Network (Datagram/Packet):     |  IP Header  |  TCP/UDP Hdr  | Application Data|
+                               +-------------+---------------+-----------------+
+                                       |
+Link (Frame):    | Eth Header  |  IP Header  |  TCP/UDP Hdr  | Data | Eth FCS  |
+                 +-------------+-------------+---------------+------+----------+
+```
+
+#### IPv4 Datagram Header & Encapsulation
+An IPv4 datagram consists of a 20-byte minimum base header followed by the encapsulated payload:
+
+```
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Version|  IHL  |Type of Service|          Total Length         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         Identification        |Flags|      Fragment Offset    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Time to Live |    Protocol   |        Header Checksum        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Source IP Address                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Destination IP Address                     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Options (if IHL > 5)                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|             Data / Payload (e.g. TCP segment / UDP datagram)  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+**Key IPv4 Header Fields**:
+- **Version (4 bits)**: Specifies the IP version (`4` for IPv4).
+- **IHL (Internet Header Length, 4 bits)**: Header size in 32-bit words (minimum value `5` = 20 bytes).
+- **Total Length (16 bits)**: Total datagram size (header + payload) in bytes; maximum theoretical size is 65,535 bytes.
+- **Fragmentation Fields (`Identification`, `Flags`, `Fragment Offset`)**: Used when a packet exceeds the outgoing link's **MTU** (Maximum Transmission Unit, typically 1500 bytes on Ethernet). The `DF` (Don't Fragment) flag prohibits fragmentation; `MF` (More Fragments) indicates additional incoming fragments.
+- **Time to Live (TTL, 8 bits)**: Prevents packets from circulating indefinitely in routing loops. Every forwarding router decrements TTL by 1; if TTL drops to 0, the packet is discarded and an ICMP Time Exceeded message is returned to the source.
+- **Protocol (8 bits)**: Identifies the transport-layer protocol encapsulated inside the payload (`6` = TCP, `17` = UDP, `1` = ICMP).
+- **Header Checksum (16 bits)**: Error-detection field recomputed at each router hop due to TTL decrements.
+- **Source & Destination IP (32 bits each)**: End-to-end logical addresses of original sender and final destination.
 
 #### IPv4 Addressing & CIDR
 An IPv4 address consists of **32 bits**, grouped into four 8-bit octets represented in dotted-decimal format (e.g. `192.168.1.1`).
